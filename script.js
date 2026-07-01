@@ -21,7 +21,7 @@ const iconoPuntoFin = L.divIcon({ html: '<div class="w-4 h-4 bg-orange-500 round
 
 // Marcador del taxi configurado con la nueva carpeta IMAGEN y tu archivo 'carrito.png'
 const iconoTaxi = L.icon({
-    iconUrl: 'IMAGEN/carrito.png',   // Ruta apuntando hacia la carpeta correspondiente
+    iconUrl: 'carrito.png',   // Ruta apuntando hacia la carpeta correspondiente
     iconSize: [42, 42],               // Dimensiones en píxeles de la imagen
     iconAnchor: [21, 21]              // Punto medio exacto para el anclaje
 });
