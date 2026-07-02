@@ -110,13 +110,6 @@ body {
   line-height: 1.3;
 }
 
-.text-row-dark {
-  color: var(--row-dark);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
 .btn-filtro {
   flex-shrink: 0;
   width: 36px;
