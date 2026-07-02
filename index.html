@@ -2,36 +2,36 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <title>Yango/DiDi Clone - Réplica Exacta</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-900 h-screen flex justify-center items-center md:p-4">
+<body class="bg-slate-900 flex justify-center items-center md:p-4 overflow-hidden">
 
-    <div class="relative w-full max-w-md h-full md:h-[850px] bg-white md:rounded-3xl md:shadow-2xl overflow-hidden flex flex-col">
-        
-        <div id="map-container">
+    <div id="app-shell" class="relative w-full max-w-md h-[100dvh] md:h-[850px] bg-white md:rounded-3xl md:shadow-2xl overflow-hidden flex flex-col">
+
+        <div id="map-container" class="relative flex-1 min-h-0">
             <div id="map"></div>
             <button class="absolute top-4 left-4 bg-white p-3 rounded-full shadow-lg text-gray-700 z-[1000] hover:bg-gray-50">
                 <i class="fa-solid fa-bars text-lg"></i>
             </button>
         </div>
 
-        <div class="w-full bg-white rounded-t-3xl shadow-[0_-8px_30px_rgb(0,0,0,0.12)] p-5 z-[1000] flex flex-col gap-4 overflow-y-auto max-h-[60%]">
+        <div id="sheet" class="w-full bg-white rounded-t-3xl shadow-[0_-8px_30px_rgb(0,0,0,0.12)] p-5 z-[1000] flex flex-col gap-4 overflow-y-auto flex-shrink-0">
             <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto -mt-2 mb-1"></div>
 
             <div id="panel-solicitar" class="flex flex-col gap-4">
                 <h2 class="text-xl font-bold text-gray-800 tracking-tight">¿A dónde vamos hoy?</h2>
-                
+
                 <div class="relative flex flex-col gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-100">
                     <div class="absolute left-[25px] top-[28px] bottom-[28px] w-0.5 border-l-2 border-dashed border-gray-300"></div>
-                    
+
                     <div class="flex items-center gap-3">
                         <div class="w-3 h-3 rounded-full bg-green-500 z-10 ml-1"></div>
-                        <div class="flex-1">
+                        <div class="flex-1 min-w-0">
                             <label class="text-[10px] uppercase font-bold text-gray-400 block">Punto de Inicio</label>
                             <input type="text" id="origen" class="w-full bg-transparent text-sm font-semibold text-gray-800 focus:outline-none" value="Av. Eduardo De Habich 136, San Martin de Porres">
                         </div>
@@ -39,7 +39,7 @@
                     <hr class="border-gray-200 ml-6">
                     <div class="flex items-center gap-3">
                         <div class="w-3 h-3 rounded-full bg-orange-500 z-10 ml-1"></div>
-                        <div class="flex-1">
+                        <div class="flex-1 min-w-0">
                             <label class="text-[10px] uppercase font-bold text-gray-400 block">Destino Final</label>
                             <input type="text" id="destino" class="w-full bg-transparent text-sm font-semibold text-gray-800 focus:outline-none" value="Av. Peru 4344, Callao">
                         </div>
@@ -96,34 +96,33 @@
 
             <div id="panel-recibo" class="hidden flex-col gap-4 py-2">
                 <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                    <span class="bg-yango-orange text-yango-orange text-[16px] font-bold px-5 py-2 rounded-full tracking-wide">Todo</span>
-                    <span class="bg-yango-gray text-gray-800 text-[16px] font-medium px-5 py-2 rounded-full">Viaje</span>
-                    <span class="bg-yango-gray text-gray-800 text-[16px] font-medium px-5 py-2 rounded-full">Comida</span>
-                    <span class="bg-yango-gray text-gray-800 text-[16px] font-medium px-5 py-2 rounded-full">Entrega</span>
-                    
-                    <button class="btn-filtro">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <span class="bg-yango-orange text-yango-orange text-[13px] font-bold px-4 py-1.5 rounded-full tracking-wide whitespace-nowrap">Todo</span>
+                    <span class="bg-yango-gray text-gray-800 text-[13px] font-medium px-4 py-1.5 rounded-full whitespace-nowrap">Viaje</span>
+                    <span class="bg-yango-gray text-gray-800 text-[13px] font-medium px-4 py-1.5 rounded-full whitespace-nowrap">Comida</span>
+                    <span class="bg-yango-gray text-gray-800 text-[13px] font-medium px-4 py-1.5 rounded-full whitespace-nowrap">Entrega</span>
+
+                    <button class="btn-filtro" aria-label="Filtrar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="6" cy="7" r="3" fill="#000000" />
                             <path d="M9 7H20" stroke="#000000" stroke-width="3" stroke-linecap="round"/>
-                            
                             <path d="M4 17H15" stroke="#000000" stroke-width="3" stroke-linecap="round"/>
                             <circle cx="18" cy="17" r="3" fill="#000000" />
                         </svg>
                     </button>
                 </div>
 
-                <div class="flex items-start gap-4 pt-4 mt-1">
-                    <div class="w-16 h-12 flex-shrink-0 flex items-center justify-center">
-                        <img src="carrito.png" alt="Icono servicio" class="w-12 h-12 object-contain">
+                <div class="flex items-start gap-3 pt-3 mt-1">
+                    <div class="w-11 h-11 flex-shrink-0 flex items-center justify-center">
+                        <img src="carrito.png" alt="Icono servicio" class="w-11 h-11 object-contain">
                     </div>
-                    
-                    <div class="flex-1 flex flex-col pl-0">
-                        <h3 id="recibo-destino-replica" class="text-[16px] font-bold text-black tracking-tight leading-tight">Av. Peru 4344, Callao</h3>
-                        <p class="text-row-muted mt-1">Express · Personal · Finalizado</p>
+
+                    <div class="flex-1 min-w-0 flex flex-col pl-0">
+                        <h3 id="recibo-destino-replica" class="text-[14px] font-bold text-black tracking-tight leading-tight truncate">Av. Peru 4344, Callao</h3>
+                        <p class="text-row-muted mt-0.5">Express · Personal · Finalizado</p>
                         <p class="text-row-dark mt-0.5">
                             <span id="recibo-costo-replica">S/ 20.00</span> · <span id="recibo-tiempo-replica">30 de jun., 9:30 pm</span>
                         </p>
-                        <button onclick="regresarAlInicio()" class="mt-4 bg-yango-gray hover:bg-gray-200 text-black font-bold text-[16px] px-6 py-2.5 rounded-full w-max tracking-wide">
+                        <button onclick="regresarAlInicio()" class="mt-3 bg-yango-gray hover:bg-gray-200 text-black font-bold text-[13px] px-5 py-2 rounded-full w-max tracking-wide">
                             Pedir de nvo.
                         </button>
                     </div>
