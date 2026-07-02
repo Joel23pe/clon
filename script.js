@@ -13,6 +13,9 @@ window.onload = function() {
     // Inicializar mapa Leaflet enfocado en Lima por defecto
     map = L.map('map', { zoomControl: false }).setView([latInicio, lonInicio], 13);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+
+    // Recalcular el tamaño del mapa cuando cambia el viewport (rotación, teclado móvil, resize)
+    window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
 };
 
 // Iconos personalizados para los marcadores en el mapa
@@ -44,10 +47,10 @@ async function buscarDireccionesReales() {
         const resDestino = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryDestino)}&limit=1`);
         const dataDestino = await resDestino.json();
 
-        if (dataInicio.length === 0) { latInicio = -12.0210; lonInicio = -77.0250; } 
+        if (dataInicio.length === 0) { latInicio = -12.0210; lonInicio = -77.0250; }
         else { latInicio = parseFloat(dataInicio[0].lat); lonInicio = parseFloat(dataInicio[0].lon); }
 
-        if (dataDestino.length === 0) { latFin = -12.0350; lonFin = -77.0950; } 
+        if (dataDestino.length === 0) { latFin = -12.0350; lonFin = -77.0950; }
         else { latFin = parseFloat(dataDestino[0].lat); lonFin = parseFloat(dataDestino[0].lon); }
 
         // Limpiar capas previas si existen
@@ -59,6 +62,7 @@ async function buscarDireccionesReales() {
         markerPasajero = L.marker([latInicio, lonInicio], { icon: iconoPuntoInicio }).addTo(map);
         markerDestino = L.marker([latFin, lonFin], { icon: iconoPuntoFin }).addTo(map);
         lineaRuta = L.polyline([[latInicio, lonInicio], [latFin, lonFin]], {color: '#94a3b8', weight: 3, dashArray: '5, 5'}).addTo(map);
+        map.invalidateSize();
         map.fitBounds(lineaRuta.getBounds(), { padding: [40, 40] });
 
         btn.innerText = "Confirmar Solicitud";
@@ -76,7 +80,7 @@ function formatearFechaEstiloReplica(fechaStr, horaStr) {
     const partes = fechaStr.split("-");
     const dia = parseInt(partes[2]);
     const mesText = meses[parseInt(partes[1]) - 1];
-    
+
     let [horas, minutos] = horaStr.split(":");
     horas = parseInt(horas);
     let ampm = horas >= 12 ? 'pm' : 'am';
@@ -182,6 +186,7 @@ function regresarAlInicio() {
     document.getElementById('panel-solicitar').classList.remove('hidden');
     document.getElementById('btn-accion').classList.remove('hidden');
     map.setView([-12.0464, -77.0302], 13);
+    setTimeout(() => map.invalidateSize(), 200);
 }
 
 // Cancelación activa por parte del usuario
