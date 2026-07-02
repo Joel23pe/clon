@@ -16,6 +16,20 @@ window.onload = function() {
 
     // Recalcular el tamaño del mapa cuando cambia el viewport (rotación, teclado móvil, resize)
     window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
+
+    // En móviles la barra del navegador cambia de alto después de cargar (o la
+    // hoja inferior termina de medirse un instante después), y Leaflet calcula
+    // su tamaño en el momento exacto de crearse. Si el contenedor cambia de
+    // tamaño luego, el mapa queda con tiles a medio cargar (área gris).
+    // Un ResizeObserver soluciona esto en cualquier navegador, de forma robusta.
+    const mapContainerEl = document.getElementById('map-container');
+    if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => { if (map) map.invalidateSize(); });
+        ro.observe(mapContainerEl);
+    }
+
+    // Refuerzo adicional para navegadores móviles lentos en asentar el layout inicial.
+    [100, 400, 900].forEach(ms => setTimeout(() => { if (map) map.invalidateSize(); }, ms));
 };
 
 // Iconos personalizados para los marcadores en el mapa
