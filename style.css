@@ -107,5 +107,5 @@ body {
   margin-top: 0px !important;
 }
 #recibo-precio-linea {
-  margin-top: 8px !important; /* <--- AJUSTA ESTE NÚMERO para la separación de la flecha roja */
+  margin-top: 14px !important; /* <--- AJUSTA ESTE NÚMERO para la separación de la flecha roja */
 }
