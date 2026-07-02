@@ -114,3 +114,14 @@ body {
 @media (max-width: 360px) {
   #panel-solicitar h2 { font-size: 1.05rem; }
 }
+
+/* Control estricto del espacio de la flecha roja */
+#recibo-destino-replica {
+  line-height: 1.1 !important;
+  margin-bottom: 5px !important; /* <--- AJUSTA ESTE NÚMERO */
+}
+
+#recibo-express-linea {
+  line-height: 1.1 !important;
+  margin-top: 0px !important;
+}
