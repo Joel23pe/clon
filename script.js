@@ -14,21 +14,16 @@ window.onload = function() {
     map = L.map('map', { zoomControl: false }).setView([latInicio, lonInicio], 13);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
-    // Recalcular el tamaño del mapa cuando cambia el viewport (rotación, teclado móvil, resize)
+    // Recalcular el tamaño del mapa cuando cambia el viewport
     window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
 
-    // En móviles la barra del navegador cambia de alto después de cargar (o la
-    // hoja inferior termina de medirse un instante después), y Leaflet calcula
-    // su tamaño en el momento exacto de crearse. Si el contenedor cambia de
-    // tamaño luego, el mapa queda con tiles a medio cargar (área gris).
-    // Un ResizeObserver soluciona esto en cualquier navegador, de forma robusta.
     const mapContainerEl = document.getElementById('map-container');
     if (window.ResizeObserver) {
         const ro = new ResizeObserver(() => { if (map) map.invalidateSize(); });
         ro.observe(mapContainerEl);
     }
 
-    // Refuerzo adicional para navegadores móviles lentos en asentar el layout inicial.
+    // Refuerzo adicional para navegadores móviles lentos
     [100, 400, 900].forEach(ms => setTimeout(() => { if (map) map.invalidateSize(); }, ms));
 };
 
@@ -36,14 +31,14 @@ window.onload = function() {
 const iconoPuntoInicio = L.divIcon({ html: '<div class="w-4 h-4 bg-green-500 rounded-full border-4 border-white shadow-lg"></div>', className: 'pin-i' });
 const iconoPuntoFin = L.divIcon({ html: '<div class="w-4 h-4 bg-orange-500 rounded-full border-4 border-white shadow-lg"></div>', className: 'pin-f' });
 
-// Marcador del taxi configurado con la nueva carpeta IMAGEN y tu archivo 'carrito.png'
+// Marcador del taxi
 const iconoTaxi = L.icon({
-    iconUrl: 'carrito.png',   // Ruta apuntando hacia la carpeta correspondiente
-    iconSize: [42, 42],               // Dimensiones en píxeles de la imagen
-    iconAnchor: [21, 21]              // Punto medio exacto para el anclaje
+    iconUrl: 'carrito.png',
+    iconSize: [42, 42],
+    iconAnchor: [21, 21]
 });
 
-// Petición asíncrona de coordenadas basadas en la dirección de texto
+// Petición asíncrona de direcciones reales
 async function buscarDireccionesReales() {
     const origenText = document.getElementById('origen').value;
     const destinoText = document.getElementById('destino').value;
@@ -67,12 +62,10 @@ async function buscarDireccionesReales() {
         if (dataDestino.length === 0) { latFin = -12.0350; lonFin = -77.0950; }
         else { latFin = parseFloat(dataDestino[0].lat); lonFin = parseFloat(dataDestino[0].lon); }
 
-        // Limpiar capas previas si existen
         if (markerPasajero) map.removeLayer(markerPasajero);
         if (markerDestino) map.removeLayer(markerDestino);
         if (lineaRuta) map.removeLayer(lineaRuta);
 
-        // Renderizado en mapa de ruta inicial
         markerPasajero = L.marker([latInicio, lonInicio], { icon: iconoPuntoInicio }).addTo(map);
         markerDestino = L.marker([latFin, lonFin], { icon: iconoPuntoFin }).addTo(map);
         lineaRuta = L.polyline([[latInicio, lonInicio], [latFin, lonFin]], {color: '#94a3b8', weight: 3, dashArray: '5, 5'}).addTo(map);
@@ -88,22 +81,17 @@ async function buscarDireccionesReales() {
     }
 }
 
-// Formateador de fechas para el estilo del recibo final
+// NUEVO FORMATEADOR: Solo calcula y devuelve la hora con am/pm (Descarta la fecha completamente)
 function formatearFechaEstiloReplica(fechaStr, horaStr) {
-    const meses = ["de ene.", "de feb.", "de mar.", "de abr.", "de may.", "de jun.", "de jul.", "de ago.", "de set.", "de oct.", "de nov.", "de dic."];
-    const partes = fechaStr.split("-");
-    const dia = parseInt(partes[2]);
-    const mesText = meses[parseInt(partes[1]) - 1];
-
     let [horas, minutos] = horaStr.split(":");
     horas = parseInt(horas);
     let ampm = horas >= 12 ? 'pm' : 'am';
     horas = horas % 12 || 12;
 
-    return `${dia} ${mesText}, ${horas}:${minutos} ${ampm}`;
+    return `${horas}:${minutos} ${ampm}`;
 }
 
-// Control de flujo de pantallas e inyección de datos de tarifa
+// Control de flujo de pantallas
 function iniciarFlujoApp() {
     const destinoText = document.getElementById('destino').value;
     const fechaText = document.getElementById('fecha-viaje').value;
@@ -112,6 +100,8 @@ function iniciarFlujoApp() {
 
     document.getElementById('recibo-destino-replica').innerText = destinoText;
     document.getElementById('recibo-costo-replica').innerText = `S/ ${parseFloat(tarifaGuardada).toFixed(2)}`;
+    
+    // Inyecta solo el valor de hora formateado
     document.getElementById('recibo-tiempo-replica').innerText = formatearFechaEstiloReplica(fechaText, horaText);
 
     document.getElementById('panel-solicitar').classList.add('hidden');
@@ -121,7 +111,7 @@ function iniciarFlujoApp() {
     setTimeout(() => { asignacionYRecogida(); }, 2000);
 }
 
-// Simulación: Conductor asignado viajando hacia el punto de origen
+// Simulación: Conductor asignado
 function asignacionYRecogida() {
     document.getElementById('status-icon').className = "w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl";
     document.getElementById('status-icon').innerHTML = '<i class="fa-solid fa-car-side"></i>';
@@ -147,7 +137,6 @@ function asignacionYRecogida() {
     }, 100);
 }
 
-// Evento: Conductor llega al origen del usuario
 function taxistaLlegoAlOrigen() {
     document.getElementById('status-icon').className = "w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center text-2xl animate-bounce";
     document.getElementById('status-icon').innerHTML = '<i class="fa-solid fa-bell"></i>';
@@ -159,7 +148,6 @@ function taxistaLlegoAlOrigen() {
     btn.setAttribute('onclick', 'iniciarViajeHaciaDestino()');
 }
 
-// Simulación: Trayecto en movimiento hacia el destino final
 function iniciarViajeHaciaDestino() {
     document.getElementById('status-icon').className = "w-16 h-16 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center text-2xl";
     document.getElementById('status-icon').innerHTML = '<i class="fa-solid fa-route"></i>';
@@ -186,7 +174,6 @@ function iniciarViajeHaciaDestino() {
     }, 100);
 }
 
-// Conclusión del viaje y paso a la ventana de recibo
 function finalizarCarreraExitosamente() {
     document.getElementById('panel-estado').classList.add('hidden');
     document.getElementById('panel-recibo').classList.remove('hidden');
@@ -194,7 +181,6 @@ function finalizarCarreraExitosamente() {
     if (markerTaxi) map.removeLayer(markerTaxi);
 }
 
-// Reinicio del layout para una nueva consulta
 function regresarAlInicio() {
     document.getElementById('panel-recibo').classList.add('hidden');
     document.getElementById('panel-solicitar').classList.remove('hidden');
@@ -203,7 +189,6 @@ function regresarAlInicio() {
     setTimeout(() => map.invalidateSize(), 200);
 }
 
-// Cancelación activa por parte del usuario
 function cancelarViaje() {
     clearInterval(simulacionInterval);
     regresarAlInicio();
