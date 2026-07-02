@@ -81,7 +81,7 @@ async function buscarDireccionesReales() {
     }
 }
 
-// NUEVO FORMATEADOR: Solo calcula y devuelve la hora con am/pm (Descarta la fecha completamente)
+// Formateador: Devuelve solo la hora con am/pm (fecha eliminada)
 function formatearFechaEstiloReplica(fechaStr, horaStr) {
     let [horas, minutos] = horaStr.split(":");
     horas = parseInt(horas);
@@ -91,17 +91,29 @@ function formatearFechaEstiloReplica(fechaStr, horaStr) {
     return `${horas}:${minutos} ${ampm}`;
 }
 
-// Control de flujo de pantallas
+// Control de flujo de pantallas e inyección dinámica con estilos forzados
 function iniciarFlujoApp() {
     const destinoText = document.getElementById('destino').value;
     const fechaText = document.getElementById('fecha-viaje').value;
     const horaText = document.getElementById('hora-viaje').value;
     tarifaGuardada = document.getElementById('monto').value;
 
-    document.getElementById('recibo-destino-replica').innerText = destinoText;
-    document.getElementById('recibo-costo-replica').innerText = `S/ ${parseFloat(tarifaGuardada).toFixed(2)}`;
+    // Capturamos el elemento del título de destino
+    const h3Destino = document.getElementById('recibo-destino-replica');
+    h3Destino.innerText = destinoText;
     
-    // Inyecta solo el valor de hora formateado
+    // CORRECCIÓN: Forzamos el espacio exacto (Flecha Roja) directo al elemento
+    h3Destino.style.setProperty('margin-bottom', '12px', 'important');
+    h3Destino.style.setProperty('line-height', '1.1', 'important');
+
+    // Forzamos también que la línea inferior de Express no se mueva de su eje
+    const pExpress = document.getElementById('recibo-express-linea');
+    if (pExpress) {
+        pExpress.style.setProperty('line-height', '1.1', 'important');
+        pExpress.style.setProperty('margin-top', '0px', 'important');
+    }
+
+    document.getElementById('recibo-costo-replica').innerText = `S/ ${parseFloat(tarifaGuardada).toFixed(2)}`;
     document.getElementById('recibo-tiempo-replica').innerText = formatearFechaEstiloReplica(fechaText, horaText);
 
     document.getElementById('panel-solicitar').classList.add('hidden');
