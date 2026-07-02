@@ -1,6 +1,4 @@
-/* ==========================================================================
-   Design tokens
-   ========================================================================== */
+/* Design tokens */
 :root {
   --yango-orange: #ff9500;
   --yango-orange-bg: #fff2e0;
@@ -11,6 +9,7 @@
 }
 
 * {
+  box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -20,20 +19,14 @@ html, body {
 }
 
 body {
-  /* Real dynamic viewport height so mobile browser toolbars don't clip the app */
   height: 100dvh;
 }
 
-/* ==========================================================================
-   App shell — matches the compact mobile-app frame proportions in the
-   reference screenshot. Fills the viewport on phones; becomes a fixed
-   phone-sized card on tablet/desktop.
-   ========================================================================== */
 #app-shell {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 430px;      /* typical modern phone width */
+  max-width: 430px;      
   height: 100dvh;
   max-height: 100dvh;
 }
@@ -45,14 +38,11 @@ body {
   }
 }
 
-/* ==========================================================================
-   Map
-   ========================================================================== */
 #map-container {
   position: relative;
   width: 100%;
   flex: 1 1 auto;
-  min-height: 120px; /* never collapse to 0 on very short screens */
+  min-height: 120px; 
 }
 
 #map {
@@ -67,9 +57,6 @@ body {
   font-size: 9px;
 }
 
-/* ==========================================================================
-   Bottom sheet
-   ========================================================================== */
 #sheet {
   flex-shrink: 0;
   border-top-left-radius: var(--sheet-radius);
@@ -81,8 +68,6 @@ body {
   #sheet { max-height: 68dvh; }
 }
 
-/* Prevent iOS Safari from auto-zooming when a text/date/time/number input
-   is focused (it zooms on any font-size below 16px). */
 #sheet input {
   font-size: 16px;
 }
@@ -91,9 +76,6 @@ body {
   #sheet input { font-size: inherit; }
 }
 
-/* ==========================================================================
-   Receipt row — proportions tuned to match the reference screenshot
-   ========================================================================== */
 .bg-yango-orange {
   background-color: var(--yango-orange-bg);
 }
@@ -129,9 +111,6 @@ body {
   display: none;
 }
 
-/* ==========================================================================
-   Small-screen fallbacks (very narrow / very short phones)
-   ========================================================================== */
 @media (max-width: 360px) {
   #panel-solicitar h2 { font-size: 1.05rem; }
 }
