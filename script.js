@@ -101,9 +101,9 @@ function iniciarFlujoApp() {
     // Capturamos el elemento del título de destino
     const h3Destino = document.getElementById('recibo-destino-replica');
     h3Destino.innerText = destinoText;
-    
+
     // CORRECCIÓN: Forzamos el espacio exacto (Flecha Roja) directo al elemento
-    h3Destino.style.setProperty('margin-bottom', '12px', 'important');
+    h3Destino.style.setProperty('margin-bottom', '16px', 'important');
     h3Destino.style.setProperty('line-height', '1.1', 'important');
 
     // Forzamos también que la línea inferior de Express no se mueva de su eje
