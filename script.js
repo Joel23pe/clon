@@ -81,14 +81,18 @@ async function buscarDireccionesReales() {
     }
 }
 
-// Formateador: Devuelve solo la hora con am/pm (fecha eliminada)
+// Formateador: Devuelve fecha + hora estilo "1 de jul., 2:51 pm"
 function formatearFechaEstiloReplica(fechaStr, horaStr) {
+    const meses = ['ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.', 'jul.', 'ago.', 'sep.', 'oct.', 'nov.', 'dic.'];
+    const [anio, mesNum, dia] = fechaStr.split('-').map(Number);
+    const textoFecha = `${dia} de ${meses[mesNum - 1]}`;
+
     let [horas, minutos] = horaStr.split(":");
     horas = parseInt(horas);
     let ampm = horas >= 12 ? 'pm' : 'am';
     horas = horas % 12 || 12;
 
-    return `${horas}:${minutos} ${ampm}`;
+    return `${textoFecha}, ${horas}:${minutos} ${ampm}`;
 }
 
 // Control de flujo de pantallas e inyección dinámica con estilos forzados
