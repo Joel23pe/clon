@@ -106,3 +106,6 @@ body {
   line-height: 1.1 !important;
   margin-top: 0px !important;
 }
+#recibo-precio-linea {
+  margin-top: 8px !important; /* <--- AJUSTA ESTE NÚMERO para la separación de la flecha roja */
+}
