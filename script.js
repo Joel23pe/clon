@@ -38,6 +38,22 @@ const iconoTaxi = L.icon({
     iconAnchor: [21, 21]
 });
 
+// Obtiene una ruta real siguiendo calles (OSRM). Si falla, devuelve línea recta como respaldo.
+async function obtenerRutaCallesReales(latO, lonO, latD, lonD) {
+    try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${lonO},${latO};${lonD},${latD}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.routes && data.routes.length > 0) {
+            // OSRM devuelve [lon, lat]; Leaflet necesita [lat, lon]
+            return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        }
+    } catch (e) {
+        console.warn('No se pudo obtener la ruta real por calles, se usa línea recta de respaldo.', e);
+    }
+    return [[latO, lonO], [latD, lonD]];
+}
+
 // Petición asíncrona de direcciones reales
 async function buscarDireccionesReales() {
     const origenText = document.getElementById('origen').value;
@@ -190,22 +206,22 @@ function iniciarViajeHaciaDestino() {
     }, 100);
 }
 
-function finalizarCarreraExitosamente() {
+async function finalizarCarreraExitosamente() {
     document.getElementById('panel-estado').classList.add('hidden');
     document.getElementById('panel-recibo').classList.remove('hidden');
 
     // Quitamos el taxi porque el viaje ya terminó
     if (markerTaxi) map.removeLayer(markerTaxi);
-
-    // Dejamos el camino recorrido visible en el mapa (color distinto para indicar "finalizado")
     if (lineaRuta) map.removeLayer(lineaRuta);
-    lineaRuta = L.polyline([[latInicio, lonInicio], [latFin, lonFin]], {
+
+    // Dibujamos el camino real recorrido (siguiendo calles) en color verde
+    const coordsRutaReal = await obtenerRutaCallesReales(latInicio, lonInicio, latFin, lonFin);
+    lineaRuta = L.polyline(coordsRutaReal, {
         color: '#22c55e',
         weight: 5,
         opacity: 0.9
     }).addTo(map);
 
-    // Ajustamos el mapa para que se vea todo el recorrido
     map.invalidateSize();
     map.fitBounds(lineaRuta.getBounds(), { padding: [40, 40] });
 }
