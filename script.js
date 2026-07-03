@@ -73,14 +73,21 @@ async function buscarDireccionesReales() {
     if (!origenText || !destinoText) { alert('Por favor, ingresa las direcciones.'); return; }
     btn.innerText = "Buscando...";
 
-    const queryOrigen = origenText.toLowerCase().includes("peru") ? origenText : `${origenText}, Lima, Peru`;
-    const queryDestino = destinoText.toLowerCase().includes("peru") ? destinoText : `${destinoText}, Lima, Peru`;
+    // Siempre agregamos contexto de país/región, salvo que el texto YA termine explícitamente en "peru"
+    const terminaEnPeru = (txt) => txt.trim().toLowerCase().endsWith('peru');
+    const queryOrigen = terminaEnPeru(origenText) ? origenText : `${origenText}, Lima, Peru`;
+    const queryDestino = terminaEnPeru(destinoText) ? destinoText : `${destinoText}, Callao, Peru`;
+
+    // Restringimos la búsqueda al área metropolitana de Lima-Callao para evitar resultados de otras regiones/distritos lejanos
+    const viewboxLimaCallao = '-77.20,-11.85,-76.85,-12.30'; // izquierda,arriba,derecha,abajo
 
     try {
-        const resInicio = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryOrigen)}&limit=1`);
+        const resInicio = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryOrigen)}&viewbox=${viewboxLimaCallao}&bounded=1&countrycodes=pe&limit=1`);
         const dataInicio = await resInicio.json();
-        const resDestino = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryDestino)}&limit=1`);
+        const resDestino = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryDestino)}&viewbox=${viewboxLimaCallao}&bounded=1&countrycodes=pe&limit=1`);
         const dataDestino = await resDestino.json();
+
+        console.log('Query origen:', queryOrigen, '| Query destino:', queryDestino);
 
         if (dataInicio.length === 0) {
             console.warn('No se encontró geocodificación para el origen, se usa respaldo aproximado de San Martín de Porres.');
