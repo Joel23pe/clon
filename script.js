@@ -107,7 +107,7 @@ function iniciarFlujoApp() {
     h3Destino.innerText = destinoText;
 
     // CORRECCIÓN: Forzamos el espacio exacto (Flecha Roja) directo al elemento
-    h3Destino.style.setProperty('margin-bottom', '16px', 'important');
+    h3Destino.style.setProperty('margin-bottom', '10px', 'important');
     h3Destino.style.setProperty('line-height', '1.1', 'important');
 
     // Forzamos también que la línea inferior de Express no se mueva de su eje
