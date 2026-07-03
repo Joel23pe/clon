@@ -43,15 +43,25 @@ async function obtenerRutaCallesReales(latO, lonO, latD, lonD) {
     try {
         const url = `https://router.project-osrm.org/route/v1/driving/${lonO},${latO};${lonD},${latD}?overview=full&geometries=geojson`;
         const res = await fetch(url);
-        const data = await res.json();
-        if (data.routes && data.routes.length > 0) {
-            // OSRM devuelve [lon, lat]; Leaflet necesita [lat, lon]
-            return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        if (!res.ok) {
+            console.error('OSRM respondió con error HTTP:', res.status);
+            return null;
         }
+        const data = await res.json();
+        if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
+            console.error('OSRM no devolvió una ruta válida:', data);
+            return null;
+        }
+        const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        if (coords.length < 2) {
+            console.error('OSRM devolvió muy pocos puntos:', coords);
+            return null;
+        }
+        return coords;
     } catch (e) {
-        console.warn('No se pudo obtener la ruta real por calles, se usa línea recta de respaldo.', e);
+        console.error('Error al obtener la ruta real por calles (posible bloqueo de red/CORS):', e);
+        return null;
     }
-    return [[latO, lonO], [latD, lonD]];
 }
 
 // Petición asíncrona de direcciones reales
@@ -214,16 +224,28 @@ async function finalizarCarreraExitosamente() {
     if (markerTaxi) map.removeLayer(markerTaxi);
     if (lineaRuta) map.removeLayer(lineaRuta);
 
-    // Dibujamos el camino real recorrido (siguiendo calles) en color verde
-    const coordsRutaReal = await obtenerRutaCallesReales(latInicio, lonInicio, latFin, lonFin);
-    lineaRuta = L.polyline(coordsRutaReal, {
+    // 1) Dibujamos de inmediato una línea recta como base, para que SIEMPRE se vea algo
+    lineaRuta = L.polyline([[latInicio, lonInicio], [latFin, lonFin]], {
         color: '#22c55e',
         weight: 5,
         opacity: 0.9
     }).addTo(map);
-
     map.invalidateSize();
     map.fitBounds(lineaRuta.getBounds(), { padding: [40, 40] });
+
+    // 2) Intentamos mejorarla con la ruta real por calles (OSRM)
+    const coordsRutaReal = await obtenerRutaCallesReales(latInicio, lonInicio, latFin, lonFin);
+    if (coordsRutaReal) {
+        map.removeLayer(lineaRuta);
+        lineaRuta = L.polyline(coordsRutaReal, {
+            color: '#22c55e',
+            weight: 5,
+            opacity: 0.9
+        }).addTo(map);
+        map.invalidateSize();
+        map.fitBounds(lineaRuta.getBounds(), { padding: [40, 40] });
+    }
+    // Si coordsRutaReal es null, se queda la línea recta que ya está dibujada (revisa la consola del navegador para ver el motivo del fallo)
 }
 
 function regresarAlInicio() {
