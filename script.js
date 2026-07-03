@@ -82,11 +82,19 @@ async function buscarDireccionesReales() {
         const resDestino = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryDestino)}&limit=1`);
         const dataDestino = await resDestino.json();
 
-        if (dataInicio.length === 0) { latInicio = -12.0210; lonInicio = -77.0250; }
+        if (dataInicio.length === 0) {
+            console.warn('No se encontró geocodificación para el origen, se usa respaldo aproximado de San Martín de Porres.');
+            latInicio = -12.0000; lonInicio = -77.0630; // Av. Eduardo de Habich, San Martín de Porres (aprox.)
+        }
         else { latInicio = parseFloat(dataInicio[0].lat); lonInicio = parseFloat(dataInicio[0].lon); }
 
-        if (dataDestino.length === 0) { latFin = -12.0350; lonFin = -77.0950; }
+        if (dataDestino.length === 0) {
+            console.warn('No se encontró geocodificación para el destino, se usa respaldo aproximado de Callao.');
+            latFin = -12.0206; lonFin = -77.1080; // Av. Peru, Callao (aprox.)
+        }
         else { latFin = parseFloat(dataDestino[0].lat); lonFin = parseFloat(dataDestino[0].lon); }
+
+        console.log('Coordenadas usadas → Origen:', latInicio, lonInicio, '| Destino:', latFin, lonFin);
 
         if (markerPasajero) map.removeLayer(markerPasajero);
         if (markerDestino) map.removeLayer(markerDestino);
