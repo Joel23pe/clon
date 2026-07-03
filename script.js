@@ -107,7 +107,7 @@ function iniciarFlujoApp() {
     h3Destino.innerText = destinoText;
 
     // CORRECCIÓN: Forzamos el espacio exacto (Flecha Roja) directo al elemento
-    h3Destino.style.setProperty('margin-bottom', '10px', 'important');
+    h3Destino.style.setProperty('margin-bottom', '16px', 'important');
     h3Destino.style.setProperty('line-height', '1.1', 'important');
 
     // Forzamos también que la línea inferior de Express no se mueva de su eje
@@ -193,8 +193,21 @@ function iniciarViajeHaciaDestino() {
 function finalizarCarreraExitosamente() {
     document.getElementById('panel-estado').classList.add('hidden');
     document.getElementById('panel-recibo').classList.remove('hidden');
-    if (lineaRuta) map.removeLayer(lineaRuta);
+
+    // Quitamos el taxi porque el viaje ya terminó
     if (markerTaxi) map.removeLayer(markerTaxi);
+
+    // Dejamos el camino recorrido visible en el mapa (color distinto para indicar "finalizado")
+    if (lineaRuta) map.removeLayer(lineaRuta);
+    lineaRuta = L.polyline([[latInicio, lonInicio], [latFin, lonFin]], {
+        color: '#22c55e',
+        weight: 5,
+        opacity: 0.9
+    }).addTo(map);
+
+    // Ajustamos el mapa para que se vea todo el recorrido
+    map.invalidateSize();
+    map.fitBounds(lineaRuta.getBounds(), { padding: [40, 40] });
 }
 
 function regresarAlInicio() {
