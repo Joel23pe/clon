@@ -3,6 +3,8 @@ let latInicio = -12.0464; let lonInicio = -77.0302;
 let latFin = -12.0945; let lonFin = -77.0321;
 let map, markerPasajero, markerDestino, markerTaxi, lineaRuta;
 let simulacionInterval; let tarifaGuardada = 0;
+let resultadosOrigen = []; let resultadosDestino = [];
+let seleccionOrigen = null; let seleccionDestino = null;
 
 // Configuración inicial al cargar la ventana
 window.onload = function() {
@@ -64,7 +66,7 @@ async function obtenerRutaCallesReales(latO, lonO, latD, lonD) {
     }
 }
 
-// Petición asíncrona de direcciones reales
+// Petición asíncrona de direcciones reales: ahora trae varias opciones para que el usuario elija
 async function buscarDireccionesReales() {
     const origenText = document.getElementById('origen').value;
     const destinoText = document.getElementById('destino').value;
@@ -72,54 +74,125 @@ async function buscarDireccionesReales() {
 
     if (!origenText || !destinoText) { alert('Por favor, ingresa las direcciones.'); return; }
     btn.innerText = "Buscando...";
+    btn.disabled = true;
 
     // Siempre agregamos contexto de país/región, salvo que el texto YA termine explícitamente en "peru"
     const terminaEnPeru = (txt) => txt.trim().toLowerCase().endsWith('peru');
     const queryOrigen = terminaEnPeru(origenText) ? origenText : `${origenText}, Lima, Peru`;
     const queryDestino = terminaEnPeru(destinoText) ? destinoText : `${destinoText}, Callao, Peru`;
 
-    // Restringimos la búsqueda al área metropolitana de Lima-Callao para evitar resultados de otras regiones/distritos lejanos
-    const viewboxLimaCallao = '-77.20,-11.85,-76.85,-12.30'; // izquierda,arriba,derecha,abajo
+    // Restringimos la búsqueda al área metropolitana de Lima-Callao
+    const viewboxLimaCallao = '-77.20,-11.85,-76.85,-12.30';
 
     try {
-        const resInicio = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryOrigen)}&viewbox=${viewboxLimaCallao}&bounded=1&countrycodes=pe&limit=1`);
-        const dataInicio = await resInicio.json();
-        const resDestino = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryDestino)}&viewbox=${viewboxLimaCallao}&bounded=1&countrycodes=pe&limit=1`);
-        const dataDestino = await resDestino.json();
+        const resInicio = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryOrigen)}&viewbox=${viewboxLimaCallao}&bounded=1&countrycodes=pe&limit=5`);
+        resultadosOrigen = await resInicio.json();
+        const resDestino = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryDestino)}&viewbox=${viewboxLimaCallao}&bounded=1&countrycodes=pe&limit=5`);
+        resultadosDestino = await resDestino.json();
 
-        console.log('Query origen:', queryOrigen, '| Query destino:', queryDestino);
+        console.log('Resultados origen:', resultadosOrigen);
+        console.log('Resultados destino:', resultadosDestino);
 
-        if (dataInicio.length === 0) {
-            console.warn('No se encontró geocodificación para el origen, se usa respaldo aproximado de San Martín de Porres.');
-            latInicio = -12.0000; lonInicio = -77.0630; // Av. Eduardo de Habich, San Martín de Porres (aprox.)
+        if (resultadosOrigen.length === 0 && resultadosDestino.length === 0) {
+            alert('No se encontraron direcciones. Intenta ser más específico (agrega distrito y número).');
+            btn.innerText = "Buscar Direcciones";
+            btn.disabled = false;
+            return;
         }
-        else { latInicio = parseFloat(dataInicio[0].lat); lonInicio = parseFloat(dataInicio[0].lon); }
 
-        if (dataDestino.length === 0) {
-            console.warn('No se encontró geocodificación para el destino, se usa respaldo aproximado de Bocanegra, Callao.');
-            latFin = -12.0330; lonFin = -77.1080; // Av. Peru, Bocanegra, Callao (aprox.)
-        }
-        else { latFin = parseFloat(dataDestino[0].lat); lonFin = parseFloat(dataDestino[0].lon); }
+        seleccionOrigen = null; seleccionDestino = null;
+        renderizarOpciones('opciones-origen', resultadosOrigen, 'origen');
+        renderizarOpciones('opciones-destino', resultadosDestino, 'destino');
+        document.getElementById('panel-opciones').classList.remove('hidden');
 
-        console.log('Coordenadas usadas → Origen:', latInicio, lonInicio, '| Destino:', latFin, lonFin);
+        // Si solo hay un resultado para alguna dirección, la seleccionamos automáticamente
+        if (resultadosOrigen.length === 1) seleccionarResultado('origen', 0);
+        if (resultadosDestino.length === 1) seleccionarResultado('destino', 0);
 
-        if (markerPasajero) map.removeLayer(markerPasajero);
-        if (markerDestino) map.removeLayer(markerDestino);
-        if (lineaRuta) map.removeLayer(lineaRuta);
-
-        markerPasajero = L.marker([latInicio, lonInicio], { icon: iconoPuntoInicio }).addTo(map);
-        markerDestino = L.marker([latFin, lonFin], { icon: iconoPuntoFin }).addTo(map);
-        lineaRuta = L.polyline([[latInicio, lonInicio], [latFin, lonFin]], {color: '#94a3b8', weight: 3, dashArray: '5, 5'}).addTo(map);
-        map.invalidateSize();
-        map.fitBounds(lineaRuta.getBounds(), { padding: [40, 40] });
-
-        btn.innerText = "Confirmar Solicitud";
-        iniciarFlujoApp();
+        btn.classList.add('hidden');
+        document.getElementById('btn-confirmar-ubicacion').classList.remove('hidden');
+        actualizarEstadoBotonConfirmar();
     } catch (e) {
-        latInicio = -12.0210; lonInicio = -77.0250;
-        latFin = -12.0350; lonFin = -77.0950;
-        iniciarFlujoApp();
+        console.error('Error buscando direcciones:', e);
+        alert('Hubo un problema buscando las direcciones. Revisa tu conexión e intenta de nuevo.');
+        btn.innerText = "Buscar Direcciones";
+        btn.disabled = false;
     }
+}
+
+// Dibuja la lista de opciones encontradas como botones seleccionables
+function renderizarOpciones(contenedorId, resultados, tipo) {
+    const contenedor = document.getElementById(contenedorId);
+    contenedor.innerHTML = '';
+    if (resultados.length === 0) {
+        contenedor.innerHTML = '<p class="text-xs text-red-500">No se encontraron resultados. Prueba con una dirección más específica.</p>';
+        return;
+    }
+    resultados.forEach((r, idx) => {
+        const btnOpcion = document.createElement('button');
+        btnOpcion.type = 'button';
+        btnOpcion.className = 'opcion-direccion text-left text-xs bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 hover:bg-gray-100 transition-colors';
+        btnOpcion.dataset.idx = idx;
+        btnOpcion.innerText = r.display_name;
+        btnOpcion.onclick = () => seleccionarResultado(tipo, idx);
+        contenedor.appendChild(btnOpcion);
+    });
+}
+
+// Guarda la opción elegida por el usuario y resalta el botón seleccionado
+function seleccionarResultado(tipo, idx) {
+    const resultados = tipo === 'origen' ? resultadosOrigen : resultadosDestino;
+    const r = resultados[idx];
+    if (!r) return;
+
+    const seleccion = { lat: parseFloat(r.lat), lon: parseFloat(r.lon), nombre: r.display_name };
+    if (tipo === 'origen') { seleccionOrigen = seleccion; }
+    else { seleccionDestino = seleccion; }
+
+    const contenedorId = tipo === 'origen' ? 'opciones-origen' : 'opciones-destino';
+    document.querySelectorAll(`#${contenedorId} .opcion-direccion`).forEach(el => {
+        el.classList.remove('bg-slate-900', 'text-white', 'border-slate-900');
+        el.classList.add('bg-gray-50', 'border-gray-200');
+    });
+    const seleccionado = document.querySelector(`#${contenedorId} .opcion-direccion[data-idx="${idx}"]`);
+    if (seleccionado) {
+        seleccionado.classList.remove('bg-gray-50', 'border-gray-200');
+        seleccionado.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
+    }
+
+    actualizarEstadoBotonConfirmar();
+}
+
+// Habilita el botón "Confirmar y Continuar" solo cuando ambas ubicaciones están elegidas
+function actualizarEstadoBotonConfirmar() {
+    const btnConfirmar = document.getElementById('btn-confirmar-ubicacion');
+    if (seleccionOrigen && seleccionDestino) {
+        btnConfirmar.disabled = false;
+        btnConfirmar.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+        btnConfirmar.disabled = true;
+        btnConfirmar.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+// Toma las ubicaciones confirmadas, dibuja los marcadores/línea inicial y continúa el flujo
+function confirmarUbicacionesYContinuar() {
+    if (!seleccionOrigen || !seleccionDestino) { return; }
+
+    latInicio = seleccionOrigen.lat; lonInicio = seleccionOrigen.lon;
+    latFin = seleccionDestino.lat; lonFin = seleccionDestino.lon;
+
+    if (markerPasajero) map.removeLayer(markerPasajero);
+    if (markerDestino) map.removeLayer(markerDestino);
+    if (lineaRuta) map.removeLayer(lineaRuta);
+
+    markerPasajero = L.marker([latInicio, lonInicio], { icon: iconoPuntoInicio }).addTo(map);
+    markerDestino = L.marker([latFin, lonFin], { icon: iconoPuntoFin }).addTo(map);
+    lineaRuta = L.polyline([[latInicio, lonInicio], [latFin, lonFin]], {color: '#94a3b8', weight: 3, dashArray: '5, 5'}).addTo(map);
+    map.invalidateSize();
+    map.fitBounds(lineaRuta.getBounds(), { padding: [40, 40] });
+
+    iniciarFlujoApp();
 }
 
 // Formateador: Devuelve fecha + hora estilo "1 de jul., 2:51 pm"
@@ -267,6 +340,22 @@ function regresarAlInicio() {
     document.getElementById('panel-recibo').classList.add('hidden');
     document.getElementById('panel-solicitar').classList.remove('hidden');
     document.getElementById('btn-accion').classList.remove('hidden');
+
+    // Reset del panel de selección de direcciones
+    document.getElementById('panel-opciones').classList.add('hidden');
+    document.getElementById('opciones-origen').innerHTML = '';
+    document.getElementById('opciones-destino').innerHTML = '';
+    resultadosOrigen = []; resultadosDestino = [];
+    seleccionOrigen = null; seleccionDestino = null;
+    const btnBuscar = document.getElementById('btn-buscar');
+    btnBuscar.innerText = "Buscar Direcciones";
+    btnBuscar.disabled = false;
+    btnBuscar.classList.remove('hidden');
+    const btnConfirmar = document.getElementById('btn-confirmar-ubicacion');
+    btnConfirmar.classList.add('hidden');
+    btnConfirmar.disabled = true;
+    btnConfirmar.classList.add('opacity-50', 'cursor-not-allowed');
+
     map.setView([-12.0464, -77.0302], 13);
     setTimeout(() => map.invalidateSize(), 200);
 }
