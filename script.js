@@ -81,14 +81,17 @@ async function buscarDireccionesReales() {
     const queryOrigen = terminaEnPeru(origenText) ? origenText : `${origenText}, Lima, Peru`;
     const queryDestino = terminaEnPeru(destinoText) ? destinoText : `${destinoText}, Callao, Peru`;
 
-    // Restringimos la búsqueda al área metropolitana de Lima-Callao
+    // Restringimos (como sugerencia, no de forma estricta) la búsqueda al área de Lima-Callao
     const viewboxLimaCallao = '-77.20,-11.85,-76.85,-12.30';
 
     try {
-        const resInicio = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryOrigen)}&viewbox=${viewboxLimaCallao}&bounded=1&countrycodes=pe&limit=5`);
-        resultadosOrigen = await resInicio.json();
-        const resDestino = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryDestino)}&viewbox=${viewboxLimaCallao}&bounded=1&countrycodes=pe&limit=5`);
-        resultadosDestino = await resDestino.json();
+        const resInicio = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryOrigen)}&viewbox=${viewboxLimaCallao}&countrycodes=pe&limit=5`);
+        const jsonOrigen = await resInicio.json();
+        resultadosOrigen = Array.isArray(jsonOrigen) ? jsonOrigen : [];
+
+        const resDestino = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryDestino)}&viewbox=${viewboxLimaCallao}&countrycodes=pe&limit=5`);
+        const jsonDestino = await resDestino.json();
+        resultadosDestino = Array.isArray(jsonDestino) ? jsonDestino : [];
 
         console.log('Resultados origen:', resultadosOrigen);
         console.log('Resultados destino:', resultadosDestino);
