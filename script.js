@@ -86,10 +86,14 @@ async function buscarDireccionesReales() {
 
     try {
         const resInicio = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryOrigen)}&viewbox=${viewboxLimaCallao}&countrycodes=pe&limit=5`);
+        console.log('Estado HTTP origen:', resInicio.status);
+        if (!resInicio.ok) throw new Error(`Nominatim respondió ${resInicio.status} al buscar el origen`);
         const jsonOrigen = await resInicio.json();
         resultadosOrigen = Array.isArray(jsonOrigen) ? jsonOrigen : [];
 
         const resDestino = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryDestino)}&viewbox=${viewboxLimaCallao}&countrycodes=pe&limit=5`);
+        console.log('Estado HTTP destino:', resDestino.status);
+        if (!resDestino.ok) throw new Error(`Nominatim respondió ${resDestino.status} al buscar el destino`);
         const jsonDestino = await resDestino.json();
         resultadosDestino = Array.isArray(jsonDestino) ? jsonDestino : [];
 
@@ -116,8 +120,8 @@ async function buscarDireccionesReales() {
         document.getElementById('btn-confirmar-ubicacion').classList.remove('hidden');
         actualizarEstadoBotonConfirmar();
     } catch (e) {
-        console.error('Error buscando direcciones:', e);
-        alert('Hubo un problema buscando las direcciones. Revisa tu conexión e intenta de nuevo.');
+        console.error('Error buscando direcciones (detalle completo):', e);
+        alert('Hubo un problema buscando las direcciones: ' + (e && e.message ? e.message : e));
         btn.innerText = "Buscar Direcciones";
         btn.disabled = false;
     }
