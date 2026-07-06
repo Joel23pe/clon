@@ -66,14 +66,15 @@ async function obtenerRutaCallesReales(latO, lonO, latD, lonD) {
     }
 }
 
-// Intenta varias variantes de búsqueda hasta encontrar resultados de manera dinámica
+// Intenta varias variantes de búsqueda hasta encontrar resultados.
+// 1) texto + contexto de distrito/país sugerido  2) texto tal cual  3) texto + ", Peru" a secas
 async function buscarCandidatosDireccion(textoOriginal, contextoSugerido) {
     const viewboxLimaCallao = '-77.20,-11.85,-76.85,-12.30';
     const intentos = [
         { q: `${textoOriginal}, ${contextoSugerido}`, viewbox: viewboxLimaCallao, countrycodes: 'pe' },
         { q: textoOriginal, viewbox: viewboxLimaCallao, countrycodes: 'pe' },
         { q: `${textoOriginal}, Peru`, viewbox: null, countrycodes: 'pe' },
-        { q: textoOriginal, viewbox: null, countrycodes: null } // Último recurso: búsqueda global libre
+        { q: textoOriginal, viewbox: null, countrycodes: null } // último recurso: búsqueda libre, sin restricciones
     ];
 
     for (const intento of intentos) {
@@ -93,13 +94,13 @@ async function buscarCandidatosDireccion(textoOriginal, contextoSugerido) {
             console.warn('Falló un intento de búsqueda:', intento.q, e);
         }
     }
-    return []; 
+    return []; // ningún intento encontró resultados
 }
 
-// Petición asíncrona de cualquier dirección ingresada en los inputs
+// Petición asíncrona de direcciones reales: ahora trae varias opciones para que el usuario elija
 async function buscarDireccionesReales() {
-    const origenText = document.getElementById('origen').value.trim();
-    const destinoText = document.getElementById('destino').value.trim();
+    const origenText = document.getElementById('origen').value;
+    const destinoText = document.getElementById('destino').value;
     const btn = document.getElementById('btn-buscar');
 
     if (!origenText || !destinoText) { alert('Por favor, ingresa las direcciones.'); return; }
@@ -125,7 +126,7 @@ async function buscarDireccionesReales() {
         renderizarOpciones('opciones-destino', resultadosDestino, 'destino');
         document.getElementById('panel-opciones').classList.remove('hidden');
 
-        // Selección automática si solo hay una coincidencia exacta
+        // Si solo hay un resultado para alguna dirección, la seleccionamos automáticamente
         if (resultadosOrigen.length === 1) seleccionarResultado('origen', 0);
         if (resultadosDestino.length === 1) seleccionarResultado('destino', 0);
 
@@ -133,8 +134,8 @@ async function buscarDireccionesReales() {
         document.getElementById('btn-confirmar-ubicacion').classList.remove('hidden');
         actualizarEstadoBotonConfirmar();
     } catch (e) {
-        console.error('Error buscando direcciones:', e);
-        alert('Hubo un problema buscando las direcciones.');
+        console.error('Error buscando direcciones (detalle completo):', e);
+        alert('Hubo un problema buscando las direcciones: ' + (e && e.message ? e.message : e));
         btn.innerText = "Buscar Direcciones";
         btn.disabled = false;
     }
@@ -151,7 +152,7 @@ function renderizarOpciones(contenedorId, resultados, tipo) {
     resultados.forEach((r, idx) => {
         const btnOpcion = document.createElement('button');
         btnOpcion.type = 'button';
-        btnOpcion.className = 'opcion-direccion w-full text-left text-xs bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 hover:bg-gray-100 transition-colors mt-1';
+        btnOpcion.className = 'opcion-direccion text-left text-xs bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 hover:bg-gray-100 transition-colors';
         btnOpcion.dataset.idx = idx;
         btnOpcion.innerText = r.display_name;
         btnOpcion.onclick = () => seleccionarResultado(tipo, idx);
@@ -231,18 +232,20 @@ function formatearFechaEstiloReplica(fechaStr, horaStr) {
 
 // Control de flujo de pantallas e inyección dinámica con estilos forzados
 function iniciarFlujoApp() {
-    // Si el usuario seleccionó una dirección exacta de la lista, usamos esa; si no, el texto ingresado
-    const destinoText = seleccionDestino ? seleccionDestino.nombre : document.getElementById('destino').value;
+    const destinoText = document.getElementById('destino').value;
     const fechaText = document.getElementById('fecha-viaje').value;
     const horaText = document.getElementById('hora-viaje').value;
     tarifaGuardada = document.getElementById('monto').value;
 
+    // Capturamos el elemento del título de destino
     const h3Destino = document.getElementById('recibo-destino-replica');
     h3Destino.innerText = destinoText;
 
+    // CORRECCIÓN: Forzamos el espacio exacto (Flecha Roja) directo al elemento
     h3Destino.style.setProperty('margin-bottom', '16px', 'important');
     h3Destino.style.setProperty('line-height', '1.1', 'important');
 
+    // Forzamos también que la línea inferior de Express no se mueva de su eje
     const pExpress = document.getElementById('recibo-express-linea');
     if (pExpress) {
         pExpress.style.setProperty('line-height', '1.1', 'important');
@@ -296,7 +299,6 @@ function taxistaLlegoAlOrigen() {
     btn.setAttribute('onclick', 'iniciarViajeHaciaDestino()');
 }
 
-// Tránsito al destino final
 function iniciarViajeHaciaDestino() {
     document.getElementById('status-icon').className = "w-16 h-16 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center text-2xl";
     document.getElementById('status-icon').innerHTML = '<i class="fa-solid fa-route"></i>';
@@ -327,9 +329,11 @@ async function finalizarCarreraExitosamente() {
     document.getElementById('panel-estado').classList.add('hidden');
     document.getElementById('panel-recibo').classList.remove('hidden');
 
+    // Quitamos el taxi porque el viaje ya terminó
     if (markerTaxi) map.removeLayer(markerTaxi);
     if (lineaRuta) map.removeLayer(lineaRuta);
 
+    // 1) Dibujamos de inmediato una línea recta como base, para que SIEMPRE se vea algo
     lineaRuta = L.polyline([[latInicio, lonInicio], [latFin, lonFin]], {
         color: '#22c55e',
         weight: 5,
@@ -338,6 +342,7 @@ async function finalizarCarreraExitosamente() {
     map.invalidateSize();
     map.fitBounds(lineaRuta.getBounds(), { padding: [40, 40] });
 
+    // 2) Intentamos mejorarla con la ruta real por calles (OSRM)
     const coordsRutaReal = await obtenerRutaCallesReales(latInicio, lonInicio, latFin, lonFin);
     if (coordsRutaReal) {
         map.removeLayer(lineaRuta);
@@ -349,29 +354,24 @@ async function finalizarCarreraExitosamente() {
         map.invalidateSize();
         map.fitBounds(lineaRuta.getBounds(), { padding: [40, 40] });
     }
+    // Si coordsRutaReal es null, se queda la línea recta que ya está dibujada (revisa la consola del navegador para ver el motivo del fallo)
 }
 
 function regresarAlInicio() {
     document.getElementById('panel-recibo').classList.add('hidden');
     document.getElementById('panel-solicitar').classList.remove('hidden');
-    
-    const btnAccion = document.getElementById('btn-accion');
-    btnAccion.classList.remove('hidden');
-    btnAccion.className = "w-full bg-red-50 text-red-600 font-bold py-3 rounded-2xl text-sm";
-    btnAccion.innerText = "Cancelar Solicitud";
-    btnAccion.setAttribute('onclick', 'cancelarViaje()');
+    document.getElementById('btn-accion').classList.remove('hidden');
 
+    // Reset del panel de selección de direcciones
     document.getElementById('panel-opciones').classList.add('hidden');
     document.getElementById('opciones-origen').innerHTML = '';
     document.getElementById('opciones-destino').innerHTML = '';
     resultadosOrigen = []; resultadosDestino = [];
     seleccionOrigen = null; seleccionDestino = null;
-    
     const btnBuscar = document.getElementById('btn-buscar');
     btnBuscar.innerText = "Buscar Direcciones";
     btnBuscar.disabled = false;
     btnBuscar.classList.remove('hidden');
-    
     const btnConfirmar = document.getElementById('btn-confirmar-ubicacion');
     btnConfirmar.classList.add('hidden');
     btnConfirmar.disabled = true;
