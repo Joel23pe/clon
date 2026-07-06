@@ -100,7 +100,7 @@ body {
 /* Control estricto del espacio de la flecha roja */
 #recibo-destino-replica {
   line-height: 1.1 !important;
-  margin-bottom: 08px !important; /* <--- AJUSTA ESTE NÚMERO */
+  margin-bottom: 16px !important; /* <--- AJUSTA ESTE NÚMERO */
 }
 #recibo-express-linea {
   line-height: 1.1 !important;
