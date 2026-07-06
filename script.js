@@ -66,6 +66,37 @@ async function obtenerRutaCallesReales(latO, lonO, latD, lonD) {
     }
 }
 
+// Intenta varias variantes de búsqueda hasta encontrar resultados.
+// 1) texto + contexto de distrito/país sugerido  2) texto tal cual  3) texto + ", Peru" a secas
+async function buscarCandidatosDireccion(textoOriginal, contextoSugerido) {
+    const viewboxLimaCallao = '-77.20,-11.85,-76.85,-12.30';
+    const intentos = [
+        { q: `${textoOriginal}, ${contextoSugerido}`, viewbox: viewboxLimaCallao, countrycodes: 'pe' },
+        { q: textoOriginal, viewbox: viewboxLimaCallao, countrycodes: 'pe' },
+        { q: `${textoOriginal}, Peru`, viewbox: null, countrycodes: 'pe' },
+        { q: textoOriginal, viewbox: null, countrycodes: null } // último recurso: búsqueda libre, sin restricciones
+    ];
+
+    for (const intento of intentos) {
+        try {
+            let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(intento.q)}&limit=5`;
+            if (intento.viewbox) url += `&viewbox=${intento.viewbox}`;
+            if (intento.countrycodes) url += `&countrycodes=${intento.countrycodes}`;
+
+            const res = await fetch(url);
+            console.log('Intento de búsqueda:', intento.q, '| HTTP:', res.status);
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+                return data;
+            }
+        } catch (e) {
+            console.warn('Falló un intento de búsqueda:', intento.q, e);
+        }
+    }
+    return []; // ningún intento encontró resultados
+}
+
 // Petición asíncrona de direcciones reales: ahora trae varias opciones para que el usuario elija
 async function buscarDireccionesReales() {
     const origenText = document.getElementById('origen').value;
@@ -76,32 +107,15 @@ async function buscarDireccionesReales() {
     btn.innerText = "Buscando...";
     btn.disabled = true;
 
-    // Siempre agregamos contexto de país/región, salvo que el texto YA termine explícitamente en "peru"
-    const terminaEnPeru = (txt) => txt.trim().toLowerCase().endsWith('peru');
-    const queryOrigen = terminaEnPeru(origenText) ? origenText : `${origenText}, Lima, Peru`;
-    const queryDestino = terminaEnPeru(destinoText) ? destinoText : `${destinoText}, Callao, Peru`;
-
-    // Restringimos (como sugerencia, no de forma estricta) la búsqueda al área de Lima-Callao
-    const viewboxLimaCallao = '-77.20,-11.85,-76.85,-12.30';
-
     try {
-        const resInicio = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryOrigen)}&viewbox=${viewboxLimaCallao}&countrycodes=pe&limit=5`);
-        console.log('Estado HTTP origen:', resInicio.status);
-        if (!resInicio.ok) throw new Error(`Nominatim respondió ${resInicio.status} al buscar el origen`);
-        const jsonOrigen = await resInicio.json();
-        resultadosOrigen = Array.isArray(jsonOrigen) ? jsonOrigen : [];
+        resultadosOrigen = await buscarCandidatosDireccion(origenText, 'Lima, Peru');
+        resultadosDestino = await buscarCandidatosDireccion(destinoText, 'Callao, Peru');
 
-        const resDestino = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryDestino)}&viewbox=${viewboxLimaCallao}&countrycodes=pe&limit=5`);
-        console.log('Estado HTTP destino:', resDestino.status);
-        if (!resDestino.ok) throw new Error(`Nominatim respondió ${resDestino.status} al buscar el destino`);
-        const jsonDestino = await resDestino.json();
-        resultadosDestino = Array.isArray(jsonDestino) ? jsonDestino : [];
-
-        console.log('Resultados origen:', resultadosOrigen);
-        console.log('Resultados destino:', resultadosDestino);
+        console.log('Resultados finales origen:', resultadosOrigen);
+        console.log('Resultados finales destino:', resultadosDestino);
 
         if (resultadosOrigen.length === 0 && resultadosDestino.length === 0) {
-            alert('No se encontraron direcciones. Intenta ser más específico (agrega distrito y número).');
+            alert('No se encontraron direcciones ni siquiera con búsqueda amplia. Revisa que estén bien escritas.');
             btn.innerText = "Buscar Direcciones";
             btn.disabled = false;
             return;
